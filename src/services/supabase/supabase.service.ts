@@ -11,8 +11,12 @@ export class SupabaseService {
       configuration().database.url!,
       configuration().database.anonKey!,
     );
+    console.log('Supabase init successfully');
   }
-  get SupabaseClient(): SupabaseClient {
+  getSupabase() {
+    return this.supabase;
+  }
+  get supabaseClient(): SupabaseClient {
     return this.supabase;
   }
 }
