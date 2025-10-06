@@ -13,6 +13,7 @@ export class SupabaseService {
     );
     console.log('Supabase init successfully');
   }
+
   getSupabase() {
     return this.supabase;
   }

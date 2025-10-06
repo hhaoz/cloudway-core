@@ -27,8 +27,13 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
+  }
+  @Post('login')
+  login(@Body() body: {email: string, password: string}) {
+    return this.userService.login(body);
   }
 }
