@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';//mã hóa mật khẩu
 export class UserService {
   constructor(private supabsaeService: SupabaseService) {}
   async create(createUserDto: CreateUserDto) {
+    createUserDto.passwordHash = await bcrypt.hash(createUserDto.passwordHash, 10);//hash mật khẩu với độ phức tạp 10
     const { data, error } = await this.supabsaeService.supabaseClient
       .from('users')
       .insert(createUserDto)
@@ -47,7 +48,6 @@ export class UserService {
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-    //cập nhật
     const { data, error } = await this.supabsaeService.supabaseClient
       .from('users')
       .update(updateUserDto)
@@ -73,7 +73,7 @@ export class UserService {
     return data;
   }
   //đăng nhập
-  async login(udto:CreateUserDto) {
+  async login(udto: { email: string; password_hash: string }) {
     const { data: user, error } = await this.supabsaeService.supabaseClient
       .from('users')
       .select('*')
@@ -82,11 +82,10 @@ export class UserService {
 
     if (error) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
-    const valid = await bcrypt.compare(udto.password, user.password_hash);
+    const valid = await bcrypt.compare(udto.password_hash, user.password_hash);
     if (!valid)
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-
-    return { message: 'Login successful', user };
+      throw new HttpException('sai thông tin đăng nhập', HttpStatus.UNAUTHORIZED);
+    return { message: 'đăng nhập thành công' };
   }
 }
 

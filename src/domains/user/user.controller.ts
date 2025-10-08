@@ -33,7 +33,7 @@ export class UserController {
     return this.userService.remove(id);
   }
   @Post('login')
-  login(@Body() body: {email: string, password: string}) {
+  login(@Body() body: {email: string, password_hash: string}) {
     return this.userService.login(body);
   }
 }

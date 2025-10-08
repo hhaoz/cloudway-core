@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { FlightsService } from './flights.service';
-import { FlightsController } from './flights.controller';
+import { FlightsInstanceService } from './services/./flights-instance.service';
+import { FlightsInstanceController } from './controllers/flights-instance .controller';
+import { SupabaseService } from '../../services/supabase/supabase.service';
+import { FlightNumberService } from './services/flight-number.service';
+import { FlightNumberController } from './controllers/flight-number.controller';
 
 @Module({
-  controllers: [FlightsController],
-  providers: [FlightsService],
+  controllers: [FlightsInstanceController,FlightNumberController],
+  providers: [SupabaseService,FlightsInstanceService,FlightNumberService],
 })
 export class FlightsModule {}
