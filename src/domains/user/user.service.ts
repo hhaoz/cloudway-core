@@ -133,6 +133,44 @@ export class UserService {
     });
 
     return await this.userRepo.save(user);
+  //   const { data, error } = await this.supabsaeService.supabaseClient
+  //     .from('users')
+  //     .update(updateUserDto)
+  //     .eq('id', id)
+  //     .select()
+  //     .single();
+  //   if (error) {
+  //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+  //   }
+  //   return data;
+  }
+
+  async remove(id: string) {
+    const { data, error } = await this.supabaseService.client
+      .from('users')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+    return data;
+  }
+  //đăng nhập
+  async login(udto: { email: string; password_hash: string }) {
+    const { data: user, error } = await this.supabaseService.client
+      .from('users')
+      .select('*')
+      .eq('email', udto.email)
+      .single();
+
+    if (error) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    const valid = await bcrypt.compare(udto.password_hash, user.password_hash);
+    if (!valid)
+      throw new HttpException('sai thông tin đăng nhập', HttpStatus.UNAUTHORIZED);
+    return { message: 'đăng nhập thành công' };
   }
 }
 

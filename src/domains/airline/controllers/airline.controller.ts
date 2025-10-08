@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AirlineService } from './airline.service';
-import { CreateAirlineDto } from './dto/create-airline.dto';
-import { UpdateAirlineDto } from './dto/update-airline.dto';
+import { AirlineService } from '../services/airline.service';
+import { CreateAirlineDto } from '../dto/create-airline.dto';
+import { UpdateAirlineDto } from '../dto/update-airline.dto';
 
 @Controller('airline')
 export class AirlineController {
