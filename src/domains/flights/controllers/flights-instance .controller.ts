@@ -7,9 +7,14 @@ import { UpdateFlightInstanceDto } from '../dto/update-flight-instance.dto';
 export class FlightsInstanceController {
   constructor(private readonly flightsInstanceService: FlightsInstanceService) {}
 
+  // @Post()
+  // create(@Body() createFlightInstanceDto: CreateFlightInstanceDto) {
+  //   return this.flightsInstanceService.create(createFlightInstanceDto);
+  // }
+
   @Post()
-  create(@Body() createFlightInstanceDto: CreateFlightInstanceDto) {
-    return this.flightsInstanceService.create(createFlightInstanceDto);
+  async createFlight(@Body() dto: CreateFlightInstanceDto) {
+    return this.flightsInstanceService.createFlight(dto);
   }
 
   @Get()

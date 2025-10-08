@@ -1,20 +1,51 @@
-import { IsDateString, IsUUID } from 'class-validator';
+// import { IsDateString, IsUUID } from 'class-validator';
+// export class CreateFlightInstanceDto {
+//   @IsUUID()
+//   id: string;
+
+//   @IsUUID()
+//   flight_number_id: string;
+
+//   @IsUUID()
+//   aircraft_id: string;
+
+//   @IsDateString()
+//   scheduled_departure_local: string;
+
+//   @IsDateString()
+//   scheduled_arrival_local: string;
+
+//   @IsDateString()
+//   created_at: string;
+// }
+
+
+import { IsArray, IsNotEmpty, IsUUID, IsString, IsNumber } from 'class-validator';
+
 export class CreateFlightInstanceDto {
   @IsUUID()
-  id: string;
+  airline_id: string;
 
-  @IsUUID()
-  flight_number_id: string;
+  flight_number: {
+    code: string;
+    departure_airport_id: string;
+    arrival_airport_id: string;
+  };
 
   @IsUUID()
   aircraft_id: string;
 
-  @IsDateString()
+  @IsNotEmpty()
   scheduled_departure_local: string;
 
-  @IsDateString()
+  @IsNotEmpty()
   scheduled_arrival_local: string;
 
-  @IsDateString()
-  created_at: string;
+  @IsArray()
+  fares: {
+    fare_bucket_id: string;
+    passenger_type: 'ADULT' | 'CHILD' | 'INFANT';
+    base_price: number;
+    total_seats: number;
+  }[];
 }
