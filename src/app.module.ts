@@ -12,6 +12,10 @@ import configuration from './configs/configuration';
 import { UserModule } from './domains/user/user.module';
 import { AuthMiddleware } from './middleware/auth/auth.middleware';
 import { AirlineModule } from './domains/airline/airline.module';
+import { AuthModule } from './domains/auth/auth.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -20,7 +24,24 @@ import { AirlineModule } from './domains/airline/airline.module';
       envFilePath: '.env',
       load: [configuration],
     }),
-    UserModule,AirlineModule
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule.forRoot({isGlobal: true,})],
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST'),
+          port: parseInt(configService.get<string>('DB_PORT') || '6543', 10),
+          username: configService.get('DB_USER'),
+          password: configService.get('DB_PASSWORD'),
+          database: configService.get('DB_NAME'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: false, // Tắt auto-sync để tránh lỗi migration
+        }
+      },
+      inject: [ConfigService],
+    }),
+
+    UserModule,AirlineModule, AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

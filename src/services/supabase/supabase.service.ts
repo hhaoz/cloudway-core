@@ -1,23 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import configuration from '../../configs/configuration';
+
 @Injectable()
 export class SupabaseService {
-  //setter, getter
-  private supabase: SupabaseClient;
+  public readonly client: SupabaseClient;
 
-  constructor() {
-    this.supabase = createClient(
-      configuration().database.url!,
-      configuration().database.anonKey!,
-    );
-    console.log('Supabase init successfully');
-  }
-
-  getSupabase() {
-    return this.supabase;
-  }
-  get supabaseClient(): SupabaseClient {
-    return this.supabase;
+  constructor(private configService: ConfigService) {
+    const url = this.configService.get<string>('SUPABASE_URL');
+    const key = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!url || !key) {
+      throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables');
+    }
+    
+    this.client = createClient(url, key);
+    console.log('Supabase client initialized successfully');
   }
 }
