@@ -7,7 +7,7 @@ import { UpdateAirportDto } from '../dto/update-airport.dto';
 export class AirportService {
   constructor(private readonly supabaseService: SupabaseService) {}
   async create(createAirportDto: CreateAirportDto) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
       .from('airports')
       .insert(createAirportDto)
       .select()
@@ -19,7 +19,7 @@ export class AirportService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
       .from('airports')
       .select('*');
     if (error) {
@@ -32,7 +32,7 @@ export class AirportService {
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
       .from('airports')
       .select('*')
       .eq('id', id)
@@ -46,7 +46,7 @@ export class AirportService {
     return data;
   }
   async update(id: string, updateAirportDto: UpdateAirportDto) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
       .from('airports')
       .update(updateAirportDto)
       .eq('id', id)
@@ -57,7 +57,7 @@ export class AirportService {
     }
   }
   async remove(id: string) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
       .from('airports')
       .delete()
       .eq('id', id)

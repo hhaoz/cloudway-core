@@ -8,7 +8,7 @@ import { SupabaseService } from '../../../services/supabase/supabase.service';
 export class AirlineService {
   constructor(private readonly supabaseService: SupabaseService) {}
   async create(createAirlineDto: CreateAirlineDto) {
-      const {data, error} = await this.supabaseService.supabaseClient
+      const {data, error} = await this.supabaseService.client
                             .from('airlines')
                             .insert(createAirlineDto)
                             .select()
@@ -16,7 +16,7 @@ export class AirlineService {
     if (data) {
         console.log("hãng bay đã tồn tại");
     }else {
-      const {data,error}= await this.supabaseService.supabaseClient
+      const {data,error}= await this.supabaseService.client
                             .from('airlines')
                             .insert(createAirlineDto)
                             .select()
@@ -29,7 +29,7 @@ export class AirlineService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
                             .from('airlines')
                             .select('*');
     if (error) {
@@ -39,7 +39,7 @@ export class AirlineService {
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
                             .from('airlines')
                             .select('*')
                             .eq('id', id) //so sanh bằng hai id
@@ -51,7 +51,7 @@ export class AirlineService {
   }
 
   async update(id: string, updateAirlineDto: UpdateAirlineDto) {
-   const { data, error } =await this.supabaseService.supabaseClient
+   const { data, error } =await this.supabaseService.client
                           .from('airlines')
                           .update(updateAirlineDto)
                           .eq('id', id)
@@ -65,7 +65,7 @@ export class AirlineService {
   }
 
   async remove(id: string) {
-    const { data, error } = await this.supabaseService.supabaseClient
+    const { data, error } = await this.supabaseService.client
                             .from('airlines')
                             .delete()
                             .eq('id', id)

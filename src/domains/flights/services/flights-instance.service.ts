@@ -7,7 +7,7 @@ export class FlightsInstanceService {
   constructor(private readonly supabaseService: SupabaseService) {
   }
   async create(createFlightInstanceDto: CreateFlightInstanceDto) {
-    const {data,error} = await this.supabaseService.supabaseClient
+    const {data,error} = await this.supabaseService.client
       .from("flight_instances")
       .insert(createFlightInstanceDto)
       .select();
@@ -18,7 +18,7 @@ export class FlightsInstanceService {
   }
 
   async findAll() {
-    const {data,error} = await this.supabaseService.supabaseClient
+    const {data,error} = await this.supabaseService.client
       .from("flight_instances")
       .select("*");
     if (error) {
@@ -28,7 +28,7 @@ export class FlightsInstanceService {
   }
 
   async findOne(id: string) {
-    const {data,error} = await this.supabaseService.supabaseClient
+    const {data,error} = await this.supabaseService.client
       .from("flight_instances")
       .select("*")
       .eq("id", id)
@@ -40,7 +40,7 @@ export class FlightsInstanceService {
   }
 
   async update(id: string, updateFlightDto: UpdateFlightInstanceDto) {
-    const {data, error} = await this.supabaseService.supabaseClient
+    const {data, error} = await this.supabaseService.client
       .from("flight_instances")
       .update(updateFlightDto)
       .eq("id", id)
@@ -54,7 +54,7 @@ export class FlightsInstanceService {
   }
 
   async remove(id: string) {
-    const {data,error} = await this.supabaseService.supabaseClient
+    const {data,error} = await this.supabaseService.client
       .from("flight_instances")
       .delete()
       .eq("id", id)
