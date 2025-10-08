@@ -16,6 +16,7 @@ import { AuthModule } from './domains/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { FlightsModule } from './domains/flights/flights.module';
 
 @Module({
   imports: [
@@ -41,7 +42,10 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
       inject: [ConfigService],
     }),
 
-    UserModule,AirlineModule, AuthModule
+    UserModule,
+    AirlineModule, 
+    AuthModule, 
+    FlightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
