@@ -53,7 +53,7 @@ import { TicketsModule } from './domains/tickets/tickets.module';
     AuthModule, 
     FlightsModule,
     FaresModule,
-     BookingSegmentsModule,
+    BookingSegmentsModule,
     PaymentsModule,
     TaxesFeesModule,
     TicketsModule
