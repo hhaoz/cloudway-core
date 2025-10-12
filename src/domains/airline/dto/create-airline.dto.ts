@@ -7,5 +7,7 @@ export class CreateAirlineDto {
   @IsNotEmpty()
   name: string;
   @IsNotEmpty()
+  logo: string;
+  @IsNotEmpty()
   created_at: Date;
 }

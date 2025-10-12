@@ -6,7 +6,7 @@ import { FlightNumberService } from './services/flight-number.service';
 import { FlightNumberController } from './controllers/flight-number.controller';
 
 @Module({
-  controllers: [FlightsInstanceController,FlightNumberController],
-  providers: [SupabaseService,FlightsInstanceService,FlightNumberService],
+  controllers: [FlightsInstanceController, FlightNumberController],
+  providers: [SupabaseService, FlightsInstanceService, FlightNumberService],
 })
 export class FlightsModule {}
