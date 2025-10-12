@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import { CreateInventoryDto } from './dto/create-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { SupabaseService } from '../../services/supabase/supabase.service';
 
 @Injectable()
-export class BookingsService {
+export class InventoriesService {
   constructor(private readonly supabaseService: SupabaseService) {
   }
-  async create(createBookingDto: CreateBookingDto) {
-    const {data, error } = await this.supabaseService.client
-      .from('bookings')
-      .insert(createBookingDto)
+  async create(createInventoryDto: CreateInventoryDto) {
+    const { data, error } = await this.supabaseService.client
+      .from('inventories')
+      .insert(createInventoryDto)
       .select();
     if (error) {
       throw new Error(error.message);
@@ -19,8 +19,8 @@ export class BookingsService {
   }
 
   async findAll() {
-    const {data, error } = await this.supabaseService.client
-      .from('bookings')
+    const { data, error } = await this.supabaseService.client
+      .from('inventories')
       .select('*');
     if (error) {
       throw new Error(error.message);
@@ -29,8 +29,8 @@ export class BookingsService {
   }
 
   async findOne(id: string) {
-    const {data, error } = await this.supabaseService.client
-      .from('bookings')
+    const { data, error } = await this.supabaseService.client
+      .from('inventories')
       .select('*')
       .eq('id', id)
       .single();
@@ -40,20 +40,21 @@ export class BookingsService {
     return data;
   }
 
-  async update(id: string, updateBookingDto: UpdateBookingDto) {
-    const {data, error } = await this.supabaseService.client
-      .from('bookings')
-      .update(updateBookingDto)
+  async update(id: string, updateInventoryDto: UpdateInventoryDto) {
+    const { data, error } = await this.supabaseService.client
+      .from('inventories')
+      .update(updateInventoryDto)
       .eq('id', id)
       .select();
     if (error) {
       throw new Error(error.message);
     }
+    return data;
   }
 
   async remove(id: string) {
-    const {data, error } = await this.supabaseService.client
-      .from('bookings')
+    const { data, error } = await this.supabaseService.client
+      .from('inventories')
       .delete()
       .eq('id', id)
       .select();

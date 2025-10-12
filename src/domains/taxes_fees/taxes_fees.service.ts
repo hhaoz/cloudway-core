@@ -1,79 +1,69 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { CreateTaxesFeeDto } from './dto/create-taxes_fee.dto';
+import { UpdateTaxesFeeDto } from './dto/update-taxes_fee.dto';
 import { SupabaseService } from '../../services/supabase/supabase.service';
 
 @Injectable()
-export class PaymentsService {
+export class TaxesFeesService {
   constructor(private readonly supabaseService: SupabaseService) {
   }
-  async create(createPaymentDto: CreatePaymentDto) {
+  async create(createTaxesFeeDto: CreateTaxesFeeDto) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .insert(createPaymentDto)
+      .from('taxes_fees')
+      .insert(createTaxesFeeDto)
       .select()
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findAll() {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('taxes_fees')
       .select('*');
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findOne(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('taxes_fees')
       .select('*')
       .eq('id', id)
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
-  async update(id: string, updatePaymentDto: UpdatePaymentDto) {
+  async update(id: string, updateTaxesFeeDto: UpdateTaxesFeeDto) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .update(updatePaymentDto)
+      .from('taxes_fees')
+      .update(updateTaxesFeeDto)
       .eq('id', id)
       .select()
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async remove(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('taxes_fees')
       .delete()
       .eq('id', id)
       .select()
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 }

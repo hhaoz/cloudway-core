@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { FaresService } from './fares.service';
-import { CreateFareDto } from './dto/create-fare.dto';
-import { UpdateFareDto } from './dto/update-fare.dto';
+import { FaresService } from '../services/fares.service';
+import { CreateFareDto } from '../dto/create-fare.dto';
+import { UpdateFareDto } from '../dto/update-fare.dto';
 
 @Controller('fares')
 export class FaresController {
@@ -19,16 +19,16 @@ export class FaresController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.faresService.findOne(+id);
+    return this.faresService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFareDto: UpdateFareDto) {
-    return this.faresService.update(+id, updateFareDto);
+    return this.faresService.update(id, updateFareDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.faresService.remove(+id);
+    return this.faresService.remove(id);
   }
 }

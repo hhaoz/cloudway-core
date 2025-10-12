@@ -1,27 +1,69 @@
 import { Injectable } from '@nestjs/common';
 import {CreateFlightNumberDto} from '../dto/create-flight-number.dto';
 import {UpdateFlightNumberDto } from '../dto/update-flight-number.dto';
+import { SupabaseService } from '../../../services/supabase/supabase.service';
 
 @Injectable()
 export class FlightNumberService {
-  create(createFlightInstanceDto: CreateFlightNumberDto) {
-    return 'This action adds a new flight';
+  constructor(private supabaseService: SupabaseService) {  }
+  async create(createFlightInstanceDto: CreateFlightNumberDto) {
+    const {data, error} = await  this.supabaseService.client
+      .from('flight_numbers')
+      .insert([createFlightInstanceDto])
+      .select()
+      .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
   }
 
-  findAll() {
-    return `This action returns all flights`;
+  async findAll() {
+      const {data, error} = await  this.supabaseService.client
+      .from('flight_numbers')
+      .select('*');
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} flight`;
+  async findOne(id: string) {
+    const {data, error} = await  this.supabaseService.client
+      .from('flight_numbers')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
   }
 
-  update(id: string, updateFlightDto: UpdateFlightNumberDto) {
-    return `This action updates a #${id} flight`;
+  async update(id: string, updateFlightDto: UpdateFlightNumberDto) {
+    const {data, error} = await  this.supabaseService.client
+      .from('flight_numbers')
+      .update(updateFlightDto)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} flight`;
+  async remove(id: string) {
+    const {data, error} = await  this.supabaseService.client
+      .from('flight_numbers')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
   }
 }
 

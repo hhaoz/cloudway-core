@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { CreatePassengerDto } from './dto/create-passenger.dto';
+import { UpdatePassengerDto } from './dto/update-passenger.dto';
 import { SupabaseService } from '../../services/supabase/supabase.service';
 
 @Injectable()
-export class PaymentsService {
+export class PassengersService {
   constructor(private readonly supabaseService: SupabaseService) {
   }
-  async create(createPaymentDto: CreatePaymentDto) {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .insert(createPaymentDto)
+  async create(createPassengerDto: CreatePassengerDto) {
+    const {data,error} = await this.supabaseService.client
+      .from('passengers')
+      .insert(createPassengerDto)
       .select()
       .single();
 
@@ -22,8 +22,8 @@ export class PaymentsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
+    const {data,error} = await this.supabaseService.client
+      .from('passengers')
       .select('*');
 
     if (error) {
@@ -34,8 +34,8 @@ export class PaymentsService {
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
+    const {data,error} = await this.supabaseService.client
+      .from('passengers')
       .select('*')
       .eq('id', id)
       .single();
@@ -47,10 +47,10 @@ export class PaymentsService {
     return data;
   }
 
-  async update(id: string, updatePaymentDto: UpdatePaymentDto) {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .update(updatePaymentDto)
+  async update(id: string, updatePassengerDto: UpdatePassengerDto) {
+    const {data,error} = await this.supabaseService.client
+      .from('passengers')
+      .update(updatePassengerDto)
       .eq('id', id)
       .select()
       .single();
@@ -63,8 +63,8 @@ export class PaymentsService {
   }
 
   async remove(id: string) {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
+    const {data,error} = await this.supabaseService.client
+      .from('passengers')
       .delete()
       .eq('id', id)
       .select()
@@ -73,7 +73,6 @@ export class PaymentsService {
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 }

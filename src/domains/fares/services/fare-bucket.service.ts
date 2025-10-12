@@ -1,79 +1,65 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { SupabaseService } from '../../services/supabase/supabase.service';
-
+import { SupabaseService } from '../../../services/supabase/supabase.service';
+import { CreateFareBucketDto } from '../dto/create-fare-bucket.dto';
+import { UpdateFareBucketDto } from '../dto/update-fare-bucket.dto';
 @Injectable()
-export class PaymentsService {
-  constructor(private readonly supabaseService: SupabaseService) {
-  }
-  async create(createPaymentDto: CreatePaymentDto) {
-    const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .insert(createPaymentDto)
-      .select()
-      .single();
+export class FareBucketService {
+  constructor(private readonly supabaseService:SupabaseService){  }
 
+  async create(createFareBucketDto: CreateFareBucketDto) {
+    const { data, error } = await this.supabaseService.client
+      .from('fare_buckets')
+      .insert(createFareBucketDto)
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findAll() {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('fare_buckets')
       .select('*');
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findOne(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('fare_buckets')
       .select('*')
       .eq('id', id)
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
-  async update(id: string, updatePaymentDto: UpdatePaymentDto) {
+  async update(id: string, updateFareBucketDto: UpdateFareBucketDto) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .update(updatePaymentDto)
+      .from('fare_buckets')
+      .update(updateFareBucketDto)
       .eq('id', id)
-      .select()
-      .single();
-
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async remove(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('fare_buckets')
       .delete()
       .eq('id', id)
-      .select()
-      .single();
-
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 }

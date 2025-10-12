@@ -1,79 +1,65 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { SupabaseService } from '../../services/supabase/supabase.service';
 
 @Injectable()
-export class PaymentsService {
-  constructor(private readonly supabaseService: SupabaseService) {
-  }
-  async create(createPaymentDto: CreatePaymentDto) {
+export class TicketsService {
+  constructor(private readonly supabaseService: SupabaseService) {}
+  async create(createTicketDto: CreateTicketDto) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .insert(createPaymentDto)
-      .select()
-      .single();
-
+      .from('tickets')
+      .insert(createTicketDto)
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findAll() {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('tickets')
       .select('*');
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async findOne(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('tickets')
       .select('*')
       .eq('id', id)
       .single();
-
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
-  async update(id: string, updatePaymentDto: UpdatePaymentDto) {
+  async update(id: string, updateTicketDto: UpdateTicketDto) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
-      .update(updatePaymentDto)
+      .from('tickets')
+      .update(updateTicketDto)
       .eq('id', id)
-      .select()
-      .single();
-
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 
   async remove(id: string) {
     const { data, error } = await this.supabaseService.client
-      .from('payments')
+      .from('tickets')
       .delete()
       .eq('id', id)
-      .select()
-      .single();
-
+      .select();
     if (error) {
       throw new Error(error.message);
     }
-
     return data;
   }
 }
