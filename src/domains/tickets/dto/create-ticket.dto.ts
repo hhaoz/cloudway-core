@@ -8,7 +8,5 @@ passenger_id:string;
 booking_segment_id:string;
 @IsString()
 ticket_number:string;
-@IsString()
-seat_number:string;
 created_at:Date;
 }
