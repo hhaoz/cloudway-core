@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { FlightsModule } from './domains/flights/flights.module';
 import { FaresModule } from './domains/fares/fares.module';
+import { BookingsModule } from './domains/bookings/bookings.module';
 import { BookingSegmentsModule } from './domains/booking-segments/booking-segments.module';
 import { PaymentsModule } from './domains/payments/payments.module';
 import { TaxesFeesModule } from './domains/taxes_fees/taxes_fees.module';
@@ -53,10 +54,11 @@ import { TicketsModule } from './domains/tickets/tickets.module';
     AuthModule, 
     FlightsModule,
     FaresModule,
+    BookingsModule,
     BookingSegmentsModule,
     PaymentsModule,
     TaxesFeesModule,
-    TicketsModule
+    TicketsModule,
 
   ],
   controllers: [AppController],
