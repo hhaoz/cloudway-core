@@ -34,7 +34,7 @@ export class AirlineStatisticController {
 
 
 
-  @Get('airlines/:id')
+  @Get(':id/statistics')
   getAirlineById(@Param('id') id: string) {
     return this.airlineStatisticService.getAirlineStatisticsById(id);
   }

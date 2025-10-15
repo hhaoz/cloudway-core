@@ -50,6 +50,57 @@ export class FlightsInstanceService {
     return data;
   }
 
+  /**
+   * Lấy tất cả flight_instances theo airline_id
+   */
+  async findByAirline(airlineId: string) {
+    const { data, error } = await this.supabaseService.client
+      .from('flight_instances')
+      .select(`
+        id,
+        scheduled_departure_local,
+        scheduled_arrival_local,
+        created_at,
+        flight_number:flight_number_id!inner (
+          id,
+          code,
+          airline_id,
+          departure_airport:departure_airport_id (
+            id,
+            iata_code,
+            name,
+            city,
+            country
+          ),
+          arrival_airport:arrival_airport_id (
+            id,
+            iata_code,
+            name,
+            city,
+            country
+          ),
+          airline:airline_id (
+            id,
+            name,
+            iata_code,
+            logo
+          )
+        ),
+        aircraft:aircraft_id (
+          id,
+          type,
+          seat_capacity
+        )
+      `)
+      .eq('flight_number.airline_id', airlineId)
+      .order('scheduled_departure_local', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
   async update(id: string, updateFlightDto: UpdateFlightInstanceDto) {
     const {data, error} = await this.supabaseService.client
       .from("flight_instances")
@@ -251,7 +302,7 @@ export class FlightsInstanceService {
         id,
         scheduled_departure_local,
         scheduled_arrival_local,
-        flight_number:flight_number_id (
+        flight_number:flight_number_id!inner (
           code,
           departure_airport:departure_airport_id (
             id,

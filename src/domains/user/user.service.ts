@@ -38,15 +38,45 @@ export class UserService {
   }
 
   async getProfile(id: string) {
-    const { data, error } = await this.supabaseService.client
+    const { data: user, error } = await this.supabaseService.client
       .from('users')
       .select('*')
-      .eq('id', id) //so sanh bằng hai id
-      .single(); //lấy một bản ghi
+      .eq('id', id)
+      .single();
     if (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
-    return data;
+
+    // Nếu không phải AIRLINE thì trả về user như cũ
+    if (!user || user.role !== 'AIRLINE') {
+      return user;
+    }
+
+    // Nếu là AIRLINE: lấy thêm danh sách airline mà user này thuộc về
+    const { data: airlineLinks, error: auError } = await this.supabaseService.client
+      .from('airline_users')
+      .select(`
+        airline:airline_id (
+          id,
+          iata_code,
+          name,
+          logo
+        )
+      `)
+      .eq('user_id', id);
+
+    if (auError) {
+      throw new HttpException(auError.message, HttpStatus.BAD_REQUEST);
+    }
+
+    const airlines = (airlineLinks || [])
+      .map((x: any) => x.airline)
+      .filter(Boolean);
+
+    return {
+      ...user,
+      airlines,
+    };
   }
 
   // async update(id: string, updateUserDto: UpdateUserDto) {

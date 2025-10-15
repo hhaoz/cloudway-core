@@ -24,6 +24,7 @@ import { PaymentsModule } from './domains/payments/payments.module';
 import { TaxesFeesModule } from './domains/taxes_fees/taxes_fees.module';
 import { TicketsModule } from './domains/tickets/tickets.module';
 import { SupabaseService } from './services/supabase/supabase.service';
+import { AirlineStatisticModule } from './domains/airline-statistic/airline-statistic.module';
 
 
 @Module({
@@ -60,6 +61,7 @@ import { SupabaseService } from './services/supabase/supabase.service';
     PaymentsModule,
     TaxesFeesModule,
     TicketsModule,
+    AirlineStatisticModule,
 
   ],
   controllers: [AppController],

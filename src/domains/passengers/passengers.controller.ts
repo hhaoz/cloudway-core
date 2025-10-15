@@ -10,7 +10,7 @@ export class PassengersController {
   constructor(private readonly passengersService: PassengersService) {}
 
   @Post()
-  @Roles(Role.AIRLINE)
+  @Roles(Role.CUSTOMER)
   create(@Body() createPassengerDto: CreatePassengerDto) {
     return this.passengersService.create(createPassengerDto);
   }

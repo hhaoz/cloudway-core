@@ -29,59 +29,75 @@ export class AirlineStatisticService {
 
 
   async getAirlineStatisticsById(airlineId: string) {
-
+    // 1) Ensure airline exists (optional but helpful for 404)
     const { data: airline, error: airlineError } = await this.supabaseService.client
       .from('airlines')
-      .select('id, name')
+      .select('id, name, iata_code')
       .eq('id', airlineId)
-      .single();
+      .maybeSingle();
 
-    if (airlineError || !airline)
+    if (airlineError)
+      throw new HttpException(airlineError.message, HttpStatus.BAD_REQUEST);
+
+    if (!airline)
       throw new HttpException('Không tìm thấy hãng bay', HttpStatus.NOT_FOUND);
 
+    // 2) Read from airline_statistics (single row per airline)
+    const { data: stats, error: statsError } = await this.supabaseService.client
+      .from('airline_statistics')
+      .select(`
+        id,
+        airline_id,
+        total_flights,
+        total_passengers,
+        total_revenue,
+        cancelled_flights,
+        on_time_flights,
+        created_at,
+        updated_at
+      `)
+      .eq('airline_id', airlineId)
+      .maybeSingle();
 
-    const { data: flights, error: flightError } = await this.supabaseService.client
-      .from('flights')
-      .select('id, price')
-      .eq('airline_id', airlineId);
+    if (statsError)
+      throw new HttpException(statsError.message, HttpStatus.BAD_REQUEST);
 
-    if (flightError)
-      throw new HttpException(flightError.message, HttpStatus.BAD_REQUEST);
-
-    const flightIds = flights.map((f) => f.id);
-
-    if (flightIds.length === 0) {
+    // 3) If no stats yet, return zeroed object
+    if (!stats) {
       return {
-        airline: airline.name,
-        totalFlights: 0,
-        totalTickets: 0,
-        totalRevenue: 0,
+        airline: {
+          id: airline.id,
+          name: airline.name,
+          iata_code: airline.iata_code,
+        },
+        statistics: {
+          totalFlights: 0,
+          totalPassengers: 0,
+          totalRevenue: 0,
+          cancelledFlights: 0,
+          onTimeFlights: 0,
+          createdAt: null,
+          updatedAt: null,
+        },
       };
     }
 
-
-    const { data: tickets, error: ticketError } = await this.supabaseService.client
-      .from('tickets')
-      .select('id, flight_id, status')
-      .in('flight_id', flightIds)
-      .eq('status', 'booked');
-
-    if (ticketError)
-      throw new HttpException(ticketError.message, HttpStatus.BAD_REQUEST);
-
-    const totalTickets = tickets.length;
-    const flightPriceMap = new Map(flights.map((f) => [f.id, f.price]));
-
-    const totalRevenue = tickets.reduce(
-      (sum, t) => sum + (flightPriceMap.get(t.flight_id) || 0),
-      0,
-    );
-
+    // 4) Map to API response
     return {
-      airline: airline.name,
-      totalFlights: flightIds.length,
-      totalTickets,
-      totalRevenue,
+      airline: {
+        id: airline.id,
+        name: airline.name,
+        iata_code: airline.iata_code,
+      },
+      statistics: {
+        totalFlights: stats.total_flights ?? 0,
+        totalPassengers: stats.total_passengers ?? 0,
+        totalRevenue: Number(stats.total_revenue ?? 0),
+        cancelledFlights: stats.cancelled_flights ?? 0,
+        onTimeFlights: stats.on_time_flights ?? 0,
+        createdAt: stats.created_at ?? null,
+        updatedAt: stats.updated_at ?? null,
+      },
     };
   }
 

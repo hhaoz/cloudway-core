@@ -18,7 +18,7 @@ import { Role } from '../../../common/enums/role.enum';
 export class AirportController {
   constructor(private readonly airportService: AirportService) { }
   @Get()
-  @Roles(Role.AIRLINE)
+  @Roles(Role.AIRLINE, Role.CUSTOMER)
   findAll() {
     return this.airportService.findAll();
   }
