@@ -2,33 +2,45 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AirlineService } from '../services/airline.service';
 import { CreateAirlineDto } from '../dto/create-airline.dto';
 import { UpdateAirlineDto } from '../dto/update-airline.dto';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { Role } from '../../../common/enums/role.enum';
 
 @Controller('airline')
 export class AirlineController {
-  // constructor(private readonly airlineService: AirlineService) {}
+  constructor(private readonly airlineService: AirlineService) {}
 
-  // @Post()
-  // create(@Body() createAirlineDto: CreateAirlineDto) {
-  //   return this.airlineService.create(createAirlineDto);
-  // }
+  @Post()
+  @Roles(Role.AIRLINE)
+  create(@Body() createAirlineDto: CreateAirlineDto) {
+    return this.airlineService.create(createAirlineDto);
+  }
 
-  // @Get()
-  // findAll() {
-  //   return this.airlineService.findAll();
-  // }
+  @Get()
+  @Roles(Role.AIRLINE)
+  findAll() {
+    return this.airlineService.findAll();
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.airlineService.findOne(id);
-  // }
+  @Get(':id')
+  @Roles(Role.AIRLINE)
+  findOne(@Param('id') id: string) {
+    return this.airlineService.findOne(id);
+  }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateAirlineDto: UpdateAirlineDto) {
-  //   return this.airlineService.update(id, updateAirlineDto);
-  // }
+  @Patch(':id')
+  @Roles(Role.AIRLINE)
+  update(@Param('id') id: string, @Body() updateAirlineDto: UpdateAirlineDto) {
+    return this.airlineService.update(id, updateAirlineDto);
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.airlineService.remove(id);
-  // }
+  @Delete(':id')
+  @Roles(Role.AIRLINE)
+  remove(@Param('id') id: string) {
+    return this.airlineService.remove(id);
+  }
+
+
+
+
+
 }

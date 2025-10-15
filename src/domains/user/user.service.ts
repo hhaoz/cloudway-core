@@ -26,16 +26,16 @@ export class UserService {
   //   return data;
   // }
 
-  // async findAll() {
-  //   //bat dong bo
-  //   const { data, error } = await this.supabsaeService.supabaseClient
-  //     .from('users')
-  //     .select('*');
-  //   if (error) {
-  //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-  //   }
-  //   return data;
-  // }
+  async findAll() {
+    //bat dong bo
+    const { data, error } = await this.supabaseService.client
+      .from('users')
+      .select('*');
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+    return data;
+  }
 
   async getProfile(id: string) {
     const { data, error } = await this.supabaseService.client
@@ -172,5 +172,52 @@ export class UserService {
       throw new HttpException('sai thông tin đăng nhập', HttpStatus.UNAUTHORIZED);
     return { message: 'đăng nhập thành công' };
   }
+
+
+
+  async updateProfile(
+    id: string,
+    updateData: { full_name?: string; phone?: string; avatar_url?: string },
+  ) {
+    const { full_name, phone, avatar_url } = updateData;
+
+    const { data, error } = await this.supabaseService.client
+      .from('users')
+      .update({
+        full_name,
+        phone,
+        avatar_url,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+
+    return { message: 'Cập nhật hồ sơ thành công', user: data };
+  }
+
+
+  async updateRole(id: string, newRole: 'CUSTOMER' | 'AIRLINE') {
+    const { data, error } = await this.supabaseService.client
+      .from('users')
+      .update({
+        role: newRole,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+
+    return { message: `Đã cập nhật vai trò người dùng thành ${newRole}`, user: data };
+  }
+
 }
 

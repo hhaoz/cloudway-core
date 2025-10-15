@@ -3,6 +3,8 @@ import { FlightsInstanceService } from '../services/./flights-instance.service';
 import { CreateFlightInstanceDto } from '../dto/create-flight-instance.dto';
 import { UpdateFlightInstanceDto } from '../dto/update-flight-instance.dto';
 import { SearchFlightsDto } from '../dto/search-flights.dto';
+import { Role } from '../../../common/enums/role.enum';
+import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('flights')
 export class FlightsInstanceController {
@@ -43,5 +45,11 @@ export class FlightsInstanceController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.flightsInstanceService.remove(id);
+  }
+
+  @Get('airline-only')
+  @Roles(Role.AIRLINE)
+  airlineOnly() {
+    return { ok: true };
   }
 }

@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { InventoriesService } from './inventories.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
+import { Role } from '../../common/enums/role.enum';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('inventories')
 export class InventoriesController {
@@ -30,5 +32,11 @@ export class InventoriesController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.inventoriesService.remove(id);
+  }
+
+  @Get('airline-only')
+  @Roles(Role.AIRLINE)
+  airlineOnly() {
+    return { ok: true };
   }
 }

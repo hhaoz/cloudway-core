@@ -3,6 +3,8 @@ import {  } from '../services/fares.service';
 import { CreateFareBucketDto } from '../dto/create-fare-bucket.dto';
 import { UpdateFareBucketDto } from '../dto/update-fare-bucket.dto';
 import { FareBucketService } from '../services/fare-bucket.service';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { Role } from '../../../common/enums/role.enum';
 
 @Controller('fare-bucket')
 export class FareBucketController {
@@ -31,5 +33,11 @@ export class FareBucketController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.fareBucketService.remove(id);
+  }
+
+  @Get('airline-only')
+  @Roles(Role.AIRLINE)
+  airlineOnly() {
+    return { ok: true };
   }
 }
