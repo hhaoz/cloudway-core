@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 
 @Controller('user')
 export class UserController {
@@ -12,12 +14,13 @@ export class UserController {
   //   return this.userService.create(createUserDto);
   // }
 
-  // @Get()
-  // findAll() {
-  //   return this.userService.findAll();
-  // }
+  @Get()
+  findAll() {
+    return this.userService.findAll();
+  }
 
   @Get(':id')
+  @Roles(Role.AIRLINE, Role.CUSTOMER, Role.ADMIN)
   getProfile(@Param('id') id: string) {
     return this.userService.getProfile(id);
   }
@@ -36,4 +39,21 @@ export class UserController {
   // login(@Body() body: {email: string, password: string}) {
   //   return this.userService.login(body);
   // }
+
+
+  @Patch(':id/profile')
+  updateProfile(
+    @Param('id') id: string,
+    @Body() body: { full_name?: string; phone?: string; avatar_url?: string },
+  ) {
+    return this.userService.updateProfile(id, body);
+  }
+
+  @Patch(':id/role')
+  updateRole(
+    @Param('id') id: string,
+    @Body() body: { role: 'CUSTOMER' | 'AIRLINE' },
+  ) {
+    return this.userService.updateRole(id, body.role);
+  }
 }
