@@ -17,7 +17,7 @@ export class BookingsController {
   }
 
   @Post('with-passengers')
-  @Roles(Role.AIRLINE)
+  @Roles(Role.CUSTOMER)
   createWithPassengers(@Body() dto: CreateBookingWithPassengersDto) {
     return this.bookingsService.createBookingWithPassengers(dto);
   }

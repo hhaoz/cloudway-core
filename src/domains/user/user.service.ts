@@ -38,15 +38,45 @@ export class UserService {
   }
 
   async getProfile(id: string) {
-    const { data, error } = await this.supabaseService.client
+    const { data: user, error } = await this.supabaseService.client
       .from('users')
       .select('*')
-      .eq('id', id) //so sanh bằng hai id
-      .single(); //lấy một bản ghi
+      .eq('id', id)
+      .single();
     if (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
-    return data;
+
+    // Nếu không phải AIRLINE thì trả về user như cũ
+    if (!user || user.role !== 'AIRLINE') {
+      return user;
+    }
+
+    // Nếu là AIRLINE: lấy thêm danh sách airline mà user này thuộc về
+    const { data: airlineLinks, error: auError } = await this.supabaseService.client
+      .from('airline_users')
+      .select(`
+        airline:airline_id (
+          id,
+          iata_code,
+          name,
+          logo
+        )
+      `)
+      .eq('user_id', id);
+
+    if (auError) {
+      throw new HttpException(auError.message, HttpStatus.BAD_REQUEST);
+    }
+
+    const airlines = (airlineLinks || [])
+      .map((x: any) => x.airline)
+      .filter(Boolean);
+
+    return {
+      ...user,
+      airlines,
+    };
   }
 
   // async update(id: string, updateUserDto: UpdateUserDto) {
@@ -105,10 +135,10 @@ export class UserService {
     email: string;
     full_name: string;
     avatar_url?: string;
-    role?: 'CUSTOMER' | 'AIRLINE_ADMIN' | 'AIRLINE_STAFF';
+    role?: 'CUSTOMER' | 'AIRLINE' | 'ADMIN';
     phone?: string;
   }): Promise<User> {
-    const { id, email, full_name, avatar_url, role = 'CUSTOMER', phone } = data;
+    const { id, email, full_name, avatar_url, role, phone } = data;
 
     let user = await this.userRepo.findOne({ where: { id } });
 
@@ -117,6 +147,7 @@ export class UserService {
       user.fullName = full_name;
       if (avatar_url !== undefined) user.avatarUrl = avatar_url;
       user.phone = phone ?? user.phone;
+      // Chỉ cập nhật role nếu có truyền vào; nếu không giữ nguyên
       user.role = role ?? user.role;
       return await this.userRepo.save(user);
     }
@@ -128,7 +159,7 @@ export class UserService {
       fullName: full_name,
       avatarUrl: avatar_url,
       phone,
-      role,
+      role: role ?? 'CUSTOMER',
       passwordHash: null, // null vì đăng nhập bằng Supabase Auth
     });
 

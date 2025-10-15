@@ -5,7 +5,7 @@ import { UpdateAircraftDto } from '../dto/update-aircraft.dto';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Role } from '../../../common/enums/role.enum';
 
-@Controller('aircraft')
+@Controller('aircrafts')
 export class AircraftController {
   constructor(private readonly aircraftService: AircraftService) {}
 

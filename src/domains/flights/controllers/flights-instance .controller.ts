@@ -37,6 +37,11 @@ export class FlightsInstanceController {
     return this.flightsInstanceService.findOne(id);
   }
 
+  @Get('airline/:airlineId')
+  findByAirline(@Param('airlineId') airlineId: string) {
+    return this.flightsInstanceService.findByAirline(airlineId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFlightInstanceDto: UpdateFlightInstanceDto) {
     return this.flightsInstanceService.update(id, updateFlightInstanceDto);
