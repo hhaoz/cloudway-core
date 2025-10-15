@@ -23,6 +23,7 @@ import { BookingSegmentsModule } from './domains/booking-segments/booking-segmen
 import { PaymentsModule } from './domains/payments/payments.module';
 import { TaxesFeesModule } from './domains/taxes_fees/taxes_fees.module';
 import { TicketsModule } from './domains/tickets/tickets.module';
+import { SupabaseService } from './services/supabase/supabase.service';
 
 
 @Module({
@@ -62,11 +63,12 @@ import { TicketsModule } from './domains/tickets/tickets.module';
 
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SupabaseService],
 })
 export class AppModule implements NestModule{
   configure(consumer:MiddlewareConsumer) {
-    // consumer.apply(AuthMiddleware).forRoutes("*")
+    // Enable auth middleware globally so req.user is populated
+    consumer.apply(AuthMiddleware).forRoutes('*')
   }
 
 }
