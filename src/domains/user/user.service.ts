@@ -105,10 +105,10 @@ export class UserService {
     email: string;
     full_name: string;
     avatar_url?: string;
-    role?: 'CUSTOMER' | 'AIRLINE_ADMIN' | 'AIRLINE_STAFF';
+    role?: 'CUSTOMER' | 'AIRLINE' | 'ADMIN';
     phone?: string;
   }): Promise<User> {
-    const { id, email, full_name, avatar_url, role = 'CUSTOMER', phone } = data;
+    const { id, email, full_name, avatar_url, role, phone } = data;
 
     let user = await this.userRepo.findOne({ where: { id } });
 
@@ -117,6 +117,7 @@ export class UserService {
       user.fullName = full_name;
       if (avatar_url !== undefined) user.avatarUrl = avatar_url;
       user.phone = phone ?? user.phone;
+      // Chỉ cập nhật role nếu có truyền vào; nếu không giữ nguyên
       user.role = role ?? user.role;
       return await this.userRepo.save(user);
     }
@@ -128,7 +129,7 @@ export class UserService {
       fullName: full_name,
       avatarUrl: avatar_url,
       phone,
-      role,
+      role: role ?? 'CUSTOMER',
       passwordHash: null, // null vì đăng nhập bằng Supabase Auth
     });
 

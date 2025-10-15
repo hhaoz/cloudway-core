@@ -38,7 +38,8 @@ export class AuthService {
       full_name: fullName,
       avatar_url: avatarUrl,
       phone: metadata.phone || null,
-      role: 'CUSTOMER',
+      // Không ép role về CUSTOMER nếu user đã tồn tại
+      // Nếu muốn map role từ Supabase metadata, có thể truyền role tại đây
     });
 
     return { message: '✅ Đăng nhập thành công', user };
