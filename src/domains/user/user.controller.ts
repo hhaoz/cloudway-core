@@ -50,10 +50,17 @@ export class UserController {
   }
 
   @Patch(':id/role')
+  @Roles(Role.ADMIN)
   updateRole(
     @Param('id') id: string,
     @Body() body: { role: 'CUSTOMER' | 'AIRLINE' },
   ) {
     return this.userService.updateRole(id, body.role);
+  }
+
+  @Get('role/:role')
+  @Roles(Role.ADMIN)
+  getUserByRole(@Param('role') role: 'CUSTOMER' | 'AIRLINE' | 'ADMIN') {
+    return this.userService.getUserByRole(role);
   }
 }

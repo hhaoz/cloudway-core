@@ -7,11 +7,7 @@ export class CreateAirportDto {
   @IsNotEmpty()
   city: string;
   @IsNotEmpty()
-  state: string;
-  @IsNotEmpty()
   country: string;
   @IsNotEmpty()
   timezone: string;
-  @IsNotEmpty()
-  created_at: Date;
 }

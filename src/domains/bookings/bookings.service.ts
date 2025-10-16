@@ -279,57 +279,193 @@ export class BookingsService {
     return totalPrice;
   }
 
-  /**
-   * Lấy thông tin booking đầy đủ với segments và passengers
-   */
-  async getBookingDetails(bookingId: string) {
-    const { data: booking, error } = await this.supabaseService.client
-      .from('bookings')
-      .select(`
-        *,
-        booking_segments (
-          *,
-          flight_instance:flight_instance_id (
-            id,
-            scheduled_departure_local,
-            scheduled_arrival_local,
-            flight_number:flight_number_id (
-              code,
-              departure_airport:departure_airport_id (iata_code, city),
-              arrival_airport:arrival_airport_id (iata_code, city),
-              airline:airline_id (name, logo)
+      /**
+       * Lấy thông tin booking đầy đủ với segments và passengers
+       */
+      async getBookingDetails(bookingId: string) {
+        const { data: booking, error } = await this.supabaseService.client
+          .from('bookings')
+          .select(`
+            *,
+            booking_segments (
+              *,
+              flight_instance:flight_instance_id (
+                id,
+                scheduled_departure_local,
+                scheduled_arrival_local,
+                flight_number:flight_number_id (
+                  code,
+                  departure_airport:departure_airport_id (iata_code, city),
+                  arrival_airport:arrival_airport_id (iata_code, city),
+                  airline:airline_id (name, logo)
+                )
+              ),
+              fare_bucket:fare_bucket_id (code, class),
+              passengers (
+                id,
+                full_name,
+                date_of_birth,
+                passenger_type,
+                phone,
+                email
+              )
+            ),
+            payments (
+              id,
+              amount,
+              currency,
+              payment_method,
+              status,
+              transaction_id,
+              paid_at,
+              created_at
             )
-          ),
-          fare_bucket:fare_bucket_id (code, class),
-          passengers (
+          `)
+          .eq('id', bookingId)
+          .single();
+
+        if (error) {
+          throw new BadRequestException(`Không tìm thấy booking: ${error.message}`);
+        }
+
+        return booking;
+      }
+
+      /**
+       * Lấy thông tin booking đầy đủ cho frontend (bao gồm tất cả chi tiết)
+       */
+      async getBookingForFrontend(bookingId: string) {
+        const { data: booking, error } = await this.supabaseService.client
+          .from('bookings')
+          .select(`
             id,
-            full_name,
-            date_of_birth,
-            passenger_type,
-            phone,
-            email
-          )
-        ),
-        payments (
-          id,
-          amount,
-          currency,
-          payment_method,
-          status,
-          transaction_id,
-          paid_at,
-          created_at
-        )
-      `)
-      .eq('id', bookingId)
-      .single();
+            pnr_code,
+            user_id,
+            contact_fullname,
+            contact_phone,
+            status,
+            created_at,
+            updated_at,
+            booking_segments (
+              id,
+              created_at,
+              flight_instance:flight_instance_id (
+                id,
+                scheduled_departure_local,
+                scheduled_arrival_local,
+                aircraft:aircraft_id (
+                  id,
+                  type,
+                  seat_capacity
+                ),
+                flight_number:flight_number_id (
+                  code,
+                  departure_airport:departure_airport_id (
+                    id,
+                    iata_code,
+                    name,
+                    city,
+                    country
+                  ),
+                  arrival_airport:arrival_airport_id (
+                    id,
+                    iata_code,
+                    name,
+                    city,
+                    country
+                  ),
+                  airline:airline_id (
+                    id,
+                    name,
+                    iata_code,
+                    logo
+                  )
+                )
+              ),
+              fare_bucket:fare_bucket_id (
+                id,
+                code,
+                class_type,
+                description
+              ),
+              passengers (
+                id,
+                full_name,
+                date_of_birth,
+                id_number,
+                phone,
+                email,
+                passenger_type,
+                created_at
+              )
+            ),
+            payments (
+              id,
+              amount,
+              currency,
+              payment_method,
+              status,
+              transaction_id,
+              paid_at,
+              created_at
+            )
+          `)
+          .eq('id', bookingId)
+          .single();
 
-    if (error) {
-      throw new BadRequestException(`Không tìm thấy booking: ${error.message}`);
-    }
+        if (error) {
+          throw new BadRequestException(`Không tìm thấy booking: ${error.message}`);
+        }
 
-    return booking;
-  }
+        // Tính tổng số hành khách
+        const totalPassengers = booking.booking_segments?.reduce((total, segment) => {
+          return total + (segment.passengers?.length || 0);
+        }, 0) || 0;
+
+        // Tính tổng số segment
+        const totalSegments = booking.booking_segments?.length || 0;
+
+        // Tính duration cho mỗi segment
+        const segmentsWithDuration = booking.booking_segments?.map((segment: any) => {
+          const departure = new Date(segment.flight_instance.scheduled_departure_local);
+          const arrival = new Date(segment.flight_instance.scheduled_arrival_local);
+          const durationMinutes = Math.floor((arrival.getTime() - departure.getTime()) / (1000 * 60));
+          const hours = Math.floor(durationMinutes / 60);
+          const minutes = durationMinutes % 60;
+
+          return {
+            ...segment,
+            duration: {
+              hours,
+              minutes,
+              total_minutes: durationMinutes,
+              formatted: `${hours}h ${minutes}m`
+            }
+          };
+        });
+
+        return {
+          booking: {
+            id: booking.id,
+            pnr_code: booking.pnr_code,
+            user_id: booking.user_id,
+            contact_info: {
+              fullname: booking.contact_fullname,
+              phone: booking.contact_phone
+            },
+            status: booking.status,
+            summary: {
+              total_passengers: totalPassengers,
+              total_segments: totalSegments,
+              is_roundtrip: totalSegments > 1
+            },
+            created_at: booking.created_at,
+            updated_at: booking.updated_at
+          },
+          segments: segmentsWithDuration,
+          payment: booking.payments?.[0] || null
+        };
+      }
 
   /**
    * Lấy thông tin booking theo PNR
