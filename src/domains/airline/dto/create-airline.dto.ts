@@ -8,6 +8,4 @@ export class CreateAirlineDto {
   name: string;
   @IsNotEmpty()
   logo: string;
-  @IsNotEmpty()
-  created_at: Date;
 }

@@ -10,13 +10,13 @@ export class AirlineController {
   constructor(private readonly airlineService: AirlineService) {}
 
   @Post()
-  @Roles(Role.AIRLINE)
+  @Roles(Role.ADMIN)
   create(@Body() createAirlineDto: CreateAirlineDto) {
     return this.airlineService.create(createAirlineDto);
   }
 
   @Get()
-  @Roles(Role.AIRLINE)
+  @Roles(Role.ADMIN)
   findAll() {
     return this.airlineService.findAll();
   }

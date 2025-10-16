@@ -250,5 +250,16 @@ export class UserService {
     return { message: `Đã cập nhật vai trò người dùng thành ${newRole}`, user: data };
   }
 
+  async getUserByRole(role: 'CUSTOMER' | 'AIRLINE' | 'ADMIN') {
+    const { data, error } = await this.supabaseService.client
+      .from('users')
+      .select('*')
+      .eq('role', role);
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+    return data;
+  }
+
 }
 

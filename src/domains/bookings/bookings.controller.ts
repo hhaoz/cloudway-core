@@ -29,15 +29,21 @@ export class BookingsController {
   }
 
   @Get('pnr/:pnrCode')
-  @Roles(Role.AIRLINE)
+  @Roles(Role.AIRLINE, Role.CUSTOMER, Role.ADMIN)
   findByPNR(@Param('pnrCode') pnrCode: string) {
     return this.bookingsService.getBookingByPNR(pnrCode);
   }
 
-  @Get(':id')
-  @Roles(Role.AIRLINE)
-  findOne(@Param('id') id: string) {
-    return this.bookingsService.getBookingDetails(id);
+  // @Get(':id')
+  // @Roles(Role.AIRLINE)
+  // findOne(@Param('id') id: string) {
+  //   return this.bookingsService.getBookingDetails(id);
+  // }
+
+  @Get(':id/booking-details')
+  @Roles(Role.CUSTOMER, Role.AIRLINE, Role.ADMIN)
+  getBookingForFrontend(@Param('id') id: string) {
+    return this.bookingsService.getBookingForFrontend(id);
   }
 
   @Patch(':id')
