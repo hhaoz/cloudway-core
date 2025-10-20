@@ -6,5 +6,6 @@ import { SupabaseService } from '../../services/supabase/supabase.service';
 @Module({
   controllers: [AirlineStatisticController],
   providers: [AirlineStatisticService, SupabaseService],
+  exports: [AirlineStatisticService],
 })
 export class AirlineStatisticModule {}
