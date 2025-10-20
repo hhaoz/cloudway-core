@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -32,6 +32,25 @@ export class BookingsController {
   @Roles(Role.AIRLINE, Role.CUSTOMER, Role.ADMIN)
   findByPNR(@Param('pnrCode') pnrCode: string) {
     return this.bookingsService.getBookingByPNR(pnrCode);
+  }
+
+  @Get('user/:userId')
+  @Roles(Role.CUSTOMER, Role.ADMIN)
+  getUserBookingHistory(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+    @Query('status') status?: string,
+    @Query('sortBy') sortBy?: 'created_at' | 'updated_at',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc'
+  ) {
+    return this.bookingsService.getUserBookingHistory(userId, {
+      limit,
+      offset,
+      status,
+      sortBy,
+      sortOrder
+    });
   }
 
   // @Get(':id')

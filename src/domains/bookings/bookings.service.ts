@@ -20,6 +20,67 @@ export class BookingsService {
     }
     return pnr;
   }
+
+  /**
+   * Tự động gán số ghế cho hành khách theo thứ tự đặt vé
+   */
+  private async generateSeatNumbers(flightInstanceId: string, passengers: any[]): Promise<string[]> {
+    // 1. Lấy thông tin aircraft để biết số ghế
+    const { data: flightInstance } = await this.supabaseService.client
+      .from('flight_instances')
+      .select(`
+        aircraft:aircraft_id (
+          seat_capacity
+        )
+      `)
+      .eq('id', flightInstanceId)
+      .single();
+
+    if (!flightInstance?.aircraft) {
+      throw new BadRequestException('Không tìm thấy thông tin máy bay');
+    }
+
+    const seatCapacity = (flightInstance.aircraft as any).seat_capacity;
+    const rows = Math.ceil(seatCapacity / 6); // Giả sử 6 ghế/1 hàng (A-F)
+    const seatLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+    // 2. Lấy danh sách ghế đã được đặt cho chuyến bay này
+    const { data: bookedSeats } = await this.supabaseService.client
+      .from('passengers')
+      .select(`
+        seat_number,
+        booking_segment:booking_segment_id (
+          flight_instance_id
+        )
+      `)
+      .not('seat_number', 'is', null);
+
+    // Lọc chỉ những ghế của chuyến bay hiện tại
+    const occupiedSeats = new Set(
+      bookedSeats
+        ?.filter(p => (p.booking_segment as any)?.flight_instance_id === flightInstanceId)
+        ?.map(p => p.seat_number) || []
+    );
+
+    // 3. Tạo danh sách ghế trống
+    const availableSeats: string[] = [];
+    for (let row = 1; row <= rows; row++) {
+      for (const letter of seatLetters) {
+        const seatNumber = `${row}${letter}`;
+        if (!occupiedSeats.has(seatNumber)) {
+          availableSeats.push(seatNumber);
+        }
+      }
+    }
+
+    // 4. Kiểm tra đủ ghế không
+    if (availableSeats.length < passengers.length) {
+      throw new BadRequestException(`Không đủ ghế trống. Còn ${availableSeats.length} ghế nhưng cần ${passengers.length} ghế`);
+    }
+
+    // 5. Gán ghế theo thứ tự (từ ghế đầu tiên có sẵn)
+    return passengers.map((_, index) => availableSeats[index]);
+  }
   async create(createBookingDto: CreateBookingDto) {
     const {data, error } = await this.supabaseService.client
       .from('bookings')
@@ -160,16 +221,22 @@ export class BookingsService {
       );
       totalAmount += segmentPrice;
 
-      // 3.3. Tạo passengers cho segment này
-      const passengerRecords = segment.passengers.map(passenger => ({
-        booking_segment_id: segmentId,
-        full_name: passenger.full_name,
-        date_of_birth: passenger.date_of_birth || null,
-        id_number: passenger.id_number || null,
-        phone: passenger.phone || null,
-        email: passenger.email || null,
-        passenger_type: passenger.passenger_type
-      }));
+      // 3.3. Tạo passengers cho segment này với số ghế tự động
+      const passengerRecords = await this.generateSeatNumbers(
+        segment.flight_instance_id,
+        segment.passengers
+      ).then(seatNumbers => 
+        segment.passengers.map((passenger, index) => ({
+          booking_segment_id: segmentId,
+          full_name: passenger.full_name,
+          date_of_birth: passenger.date_of_birth || null,
+          id_number: passenger.id_number || null,
+          phone: passenger.phone || null,
+          email: passenger.email || null,
+          passenger_type: passenger.passenger_type,
+          seat_number: seatNumbers[index] // Tự động gán số ghế
+        }))
+      );
 
       const { data: passengers, error: passengersError } = await this.supabaseService.client
         .from('passengers')
@@ -245,36 +312,23 @@ export class BookingsService {
     fareBucketId: string,
     passengers: any[]
   ): Promise<number> {
-    // Group passengers theo type
-    const passengerCounts = {
-      ADULT: passengers.filter(p => p.passenger_type === 'ADULT').length,
-      CHILD: passengers.filter(p => p.passenger_type === 'CHILD').length,
-      INFANT: passengers.filter(p => p.passenger_type === 'INFANT').length
-    };
+    // Lấy giá cơ bản cho hạng vé này
+    const { data: fare } = await this.supabaseService.client
+      .from('fares')
+      .select('base_price')
+      .eq('flight_instance_id', flightInstanceId)
+      .eq('fare_bucket_id', fareBucketId)
+      .maybeSingle();
 
-    let totalPrice = 0;
-
-    // Lấy giá cho từng loại passenger
-    for (const [passengerType, count] of Object.entries(passengerCounts)) {
-      if (count === 0) continue;
-
-      const { data: fare } = await this.supabaseService.client
-        .from('fares')
-        .select('base_price')
-        .eq('flight_instance_id', flightInstanceId)
-        .eq('fare_bucket_id', fareBucketId)
-        .eq('passenger_type', passengerType)
-        .maybeSingle();
-
-      if (fare) {
-        totalPrice += parseFloat(fare.base_price) * count;
-      } else {
-        // Nếu không tìm thấy giá cụ thể, có thể throw error hoặc dùng giá default
-        throw new BadRequestException(
-          `Không tìm thấy giá vé cho ${passengerType} trên chuyến bay này`
-        );
-      }
+    if (!fare) {
+      throw new BadRequestException('Không tìm thấy giá vé cho hạng vé này');
     }
+
+    const basePrice = parseFloat(fare.base_price);
+
+    // Tất cả hành khách đều trả cùng giá (không phân biệt ADULT/CHILD/INFANT)
+    const totalPassengers = passengers.length;
+    const totalPrice = basePrice * totalPassengers;
 
     return totalPrice;
   }
@@ -517,5 +571,124 @@ export class BookingsService {
     }
 
     return booking;
+  }
+
+  /**
+   * Lấy lịch sử đặt vé của người dùng
+   */
+  async getUserBookingHistory(userId: string, options?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    sortBy?: 'created_at' | 'updated_at';
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const {
+      limit = 20,
+      offset = 0,
+      status,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options || {};
+
+    let query = this.supabaseService.client
+      .from('bookings')
+      .select(`
+        id,
+        pnr_code,
+        user_id,
+        contact_fullname,
+        contact_phone,
+        status,
+        created_at,
+        updated_at,
+        booking_segments (
+          id,
+          flight_instance:flight_instance_id (
+            id,
+            scheduled_departure_local,
+            scheduled_arrival_local,
+            flight_number:flight_number_id (
+              code,
+              departure_airport:departure_airport_id (iata_code, city, name),
+              arrival_airport:arrival_airport_id (iata_code, city, name),
+              airline:airline_id (name, logo, iata_code)
+            )
+          ),
+          fare_bucket:fare_bucket_id (code, class_type, description),
+          passengers (
+            id,
+            full_name,
+            passenger_type,
+            seat_number
+          )
+        ),
+        payments (
+          id,
+          amount,
+          currency,
+          payment_method,
+          status,
+          paid_at,
+          created_at
+        )
+      `)
+      .eq('user_id', userId)
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .range(offset, offset + limit - 1);
+
+    // Filter by status if provided
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data: bookings, error, count } = await query;
+
+    if (error) {
+      throw new BadRequestException(`Lỗi khi lấy lịch sử đặt vé: ${error.message}`);
+    }
+
+    // Format response với thông tin tóm tắt
+    const formattedBookings = bookings?.map(booking => {
+      const totalPassengers = booking.booking_segments?.reduce((total, segment) => {
+        return total + (segment.passengers?.length || 0);
+      }, 0) || 0;
+
+      const totalSegments = booking.booking_segments?.length || 0;
+      const totalAmount = booking.payments?.[0]?.amount || 0;
+
+      // Lấy thông tin chuyến bay đầu tiên và cuối cùng
+      const firstSegment = booking.booking_segments?.[0] as any;
+      const lastSegment = booking.booking_segments?.[booking.booking_segments.length - 1] as any;
+
+      return {
+        id: booking.id,
+        pnr_code: booking.pnr_code,
+        status: booking.status,
+        summary: {
+          total_passengers: totalPassengers,
+          total_segments: totalSegments,
+          total_amount: totalAmount,
+          is_roundtrip: totalSegments > 1,
+          departure_airport: firstSegment?.flight_instance?.flight_number?.departure_airport?.iata_code,
+          arrival_airport: lastSegment?.flight_instance?.flight_number?.arrival_airport?.iata_code,
+          departure_date: firstSegment?.flight_instance?.scheduled_departure_local,
+          airline: firstSegment?.flight_instance?.flight_number?.airline?.name
+        },
+        payment_status: booking.payments?.[0]?.status || 'PENDING',
+        created_at: booking.created_at,
+        updated_at: booking.updated_at
+      };
+    }) || [];
+
+    return {
+      bookings: formattedBookings,
+      pagination: {
+        total: count || 0,
+        limit,
+        offset,
+        has_more: (count || 0) > offset + limit
+      }
+    };
   }
 }

@@ -44,8 +44,6 @@ export class CreateFlightInstanceDto {
   @IsArray()
   fares: {
     fare_bucket_id: string;
-    passenger_type: 'ADULT' | 'CHILD' | 'INFANT';
     base_price: number;
-    total_seats: number;
   }[];
 }
