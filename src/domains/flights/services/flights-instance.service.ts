@@ -184,19 +184,31 @@ export class FlightsInstanceService {
 
     const flightInstanceId = newInstance.id;
 
-    // 4️⃣ Tạo fares & inventories tương ứng
+    // 4️⃣ Lấy seat_capacity từ aircraft
+    const { data: aircraft } = await this.supabaseService.client
+      .from('aircrafts')
+      .select('seat_capacity')
+      .eq('id', aircraft_id)
+      .single();
+
+    if (!aircraft) {
+      throw new BadRequestException('Không tìm thấy thông tin máy bay');
+    }
+
+    const totalSeats = aircraft.seat_capacity;
+
+    // 5️⃣ Tạo fares & inventories tương ứng
     const fareRows = fares.map((f) => ({
       flight_instance_id: flightInstanceId,
       fare_bucket_id: f.fare_bucket_id,
-      passenger_type: f.passenger_type,
       base_price: f.base_price
     }));
 
     const inventoryRows = fares.map((f) => ({
       flight_instance_id: flightInstanceId,
       fare_bucket_id: f.fare_bucket_id,
-      available_seats: f.total_seats,
-      total_seats: f.total_seats
+      available_seats: totalSeats, // Sử dụng seat_capacity của aircraft
+      total_seats: totalSeats      // Sử dụng seat_capacity của aircraft
     }));
 
     const { error: fareError } = await this.supabaseService.client.from('fares').insert(fareRows);
@@ -342,18 +354,36 @@ export class FlightsInstanceService {
       return [];
     }
 
-    // Lọc những chuyến bay còn đủ ghế
-    const flightsWithAvailability = await Promise.all(
-      (flights || []).map(async (flight) => {
-        const availability = await this.checkSeatAvailability(flight.id, minSeats);
-        return {
-          ...flight,
-          has_available_seats: availability.hasEnoughSeats,
-          available_seats: availability.totalAvailable,
-          fare_buckets: availability.fareBuckets
-        };
-      })
-    );
+        // Lọc những chuyến bay còn đủ ghế và thêm thông tin giá
+        const flightsWithAvailability = await Promise.all(
+          (flights || []).map(async (flight) => {
+            const availability = await this.checkSeatAvailability(flight.id, minSeats);
+            
+            // Lấy thông tin giá cho chuyến bay này
+            const { data: fares, error: faresError } = await this.supabaseService.client
+              .from('fares')
+              .select(`
+                base_price,
+                fare_bucket:fare_bucket_id (
+                  id,
+                  code,
+                  class_type,
+                  description
+                )
+              `)
+              .eq('flight_instance_id', flight.id);
+
+
+            return {
+              ...flight,
+              has_available_seats: availability.hasEnoughSeats,
+              available_seats: availability.totalAvailable,
+              total_seats: availability.totalSeats,
+              fare_buckets: availability.fareBuckets,
+              fares: fares || []
+            };
+          })
+        );
 
     return flightsWithAvailability.filter(f => f.has_available_seats);
   }
@@ -377,14 +407,35 @@ export class FlightsInstanceService {
       .eq('flight_instance_id', flightInstanceId);
 
     const totalAvailable = (inventories || []).reduce((sum, inv) => sum + inv.available_seats, 0);
+    const totalSeats = (inventories || []).reduce((sum, inv) => sum + inv.total_seats, 0);
     
-    // Nếu không có inventory, coi như có đủ ghế (chuyến bay mới chưa setup)
+    // Nếu không có inventory, lấy seat_capacity từ aircraft
     const hasInventory = inventories && inventories.length > 0;
-    const hasEnoughSeats = hasInventory ? totalAvailable >= requiredSeats : true;
+    let actualAvailableSeats = totalAvailable;
+    let actualTotalSeats = totalSeats;
+    
+    if (!hasInventory) {
+      // Lấy seat_capacity từ aircraft nếu không có inventory
+      const { data: flightInstance } = await this.supabaseService.client
+        .from('flight_instances')
+        .select(`
+          aircraft:aircraft_id (
+            seat_capacity
+          )
+        `)
+        .eq('id', flightInstanceId)
+        .single();
+      
+      actualTotalSeats = (flightInstance?.aircraft as any)?.seat_capacity || 0;
+      actualAvailableSeats = actualTotalSeats; // Nếu chưa có inventory, coi như tất cả ghế còn trống
+    }
+    
+    const hasEnoughSeats = actualAvailableSeats >= requiredSeats;
     
     return {
       hasEnoughSeats,
-      totalAvailable: hasInventory ? totalAvailable : 999, // Default nếu chưa có inventory
+      totalAvailable: actualAvailableSeats,
+      totalSeats: actualTotalSeats,
       fareBuckets: inventories || []
     };
   }
@@ -393,41 +444,40 @@ export class FlightsInstanceService {
    * Tính tổng giá cho chuyến bay
    */
   private async calculateFlightPrice(flight: any, adults: number, children: number, infants: number) {
-    const { data: fares } = await this.supabaseService.client
-      .from('fares')
-      .select('passenger_type, base_price, fare_bucket_id')
-      .eq('flight_instance_id', flight.id);
+    // Sử dụng thông tin fares đã có sẵn từ findFlightsByRoute
+    const fares = flight.fares || [];
 
     if (!fares || fares.length === 0) {
       return {
         ...flight,
+        fares: [], // ✅ THÊM DÒNG NÀY
         pricing: {
-          adult_price: 0,
-          child_price: 0,
-          infant_price: 0,
-          total_price: 0
+          base_price: 0,
+          total_passengers: adults + children + infants,
+          total_price: 0,
+          currency: 'VND',
+          breakdown: {
+            adults: adults > 0 ? { count: adults, unit_price: 0, total: 0 } : null,
+            children: children > 0 ? { count: children, unit_price: 0, total: 0 } : null,
+            infants: infants > 0 ? { count: infants, unit_price: 0, total: 0 } : null
+          }
         }
       };
     }
 
-    const adultFares = fares.filter(f => f.passenger_type === 'ADULT');
-    const childFares = fares.filter(f => f.passenger_type === 'CHILD');
-    const infantFares = fares.filter(f => f.passenger_type === 'INFANT');
-
-    const minAdultPrice = adultFares.length > 0 
-      ? Math.min(...adultFares.map(f => f.base_price)) 
-      : 0;
-    const minChildPrice = childFares.length > 0 
-      ? Math.min(...childFares.map(f => f.base_price)) 
-      : minAdultPrice * 0.75;
-    const minInfantPrice = infantFares.length > 0 
-      ? Math.min(...infantFares.map(f => f.base_price)) 
-      : minAdultPrice * 0.1;
-
-    const totalPrice = 
-      (minAdultPrice * adults) + 
-      (minChildPrice * children) + 
-      (minInfantPrice * infants);
+    // Lấy giá của hạng phổ thông (Economy) làm giá mặc định
+    const economyFare = fares.find(f => 
+      f.fare_bucket?.class_type?.toLowerCase().includes('economy') ||
+      f.fare_bucket?.code?.toLowerCase().includes('eco') ||
+      f.fare_bucket?.description?.toLowerCase().includes('economy')
+    );
+    
+    // Nếu không tìm thấy Economy, lấy giá thấp nhất
+    const defaultPrice = economyFare ? economyFare.base_price : Math.min(...fares.map(f => f.base_price));
+    
+    // Tất cả hành khách đều trả cùng giá (không phân biệt ADULT/CHILD/INFANT)
+    const totalPassengers = adults + children + infants;
+    const totalPrice = defaultPrice * totalPassengers;
 
     const departure = new Date(flight.scheduled_departure_local);
     const arrival = new Date(flight.scheduled_arrival_local);
@@ -461,16 +511,17 @@ export class FlightsInstanceService {
       aircraft: flight.aircraft,
       status: flight.status || 'SCHEDULED',
       available_seats: flight.available_seats,
+      total_seats: flight.total_seats,
+      fares: fares, // ✅ THÊM DÒNG NÀY
       pricing: {
-        adult_price: minAdultPrice,
-        child_price: minChildPrice,
-        infant_price: minInfantPrice,
+        base_price: defaultPrice,
+        total_passengers: totalPassengers,
         total_price: totalPrice,
         currency: 'VND',
         breakdown: {
-          adults: adults > 0 ? { count: adults, unit_price: minAdultPrice, total: minAdultPrice * adults } : null,
-          children: children > 0 ? { count: children, unit_price: minChildPrice, total: minChildPrice * children } : null,
-          infants: infants > 0 ? { count: infants, unit_price: minInfantPrice, total: minInfantPrice * infants } : null
+          adults: adults > 0 ? { count: adults, unit_price: defaultPrice, total: defaultPrice * adults } : null,
+          children: children > 0 ? { count: children, unit_price: defaultPrice, total: defaultPrice * children } : null,
+          infants: infants > 0 ? { count: infants, unit_price: defaultPrice, total: defaultPrice * infants } : null
         }
       },
       fare_buckets: flight.fare_buckets || []
