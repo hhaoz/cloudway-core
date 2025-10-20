@@ -281,7 +281,10 @@ export class BookingsService {
       throw new BadRequestException(`Lỗi tạo payment: ${paymentError.message}`);
     }
 
-    // 5. Return booking info đầy đủ
+    // 5. Giảm available seats ngay khi booking thành công (chưa có payment gateway)
+    await this.reduceAvailableSeats(bookingId);
+
+    // 6. Return booking info đầy đủ
     return {
       message: '✅ Tạo booking thành công',
       booking: {
@@ -331,6 +334,60 @@ export class BookingsService {
     const totalPrice = basePrice * totalPassengers;
 
     return totalPrice;
+  }
+
+  /**
+   * Giảm số ghế available trong inventories khi booking được tạo thành công
+   */
+  private async reduceAvailableSeats(bookingId: string) {
+    // Lấy tất cả booking segments của booking này
+    const { data: segments, error: segmentsError } = await this.supabaseService.client
+      .from('booking_segments')
+      .select(`
+        flight_instance_id,
+        fare_bucket_id,
+        passengers (id)
+      `)
+      .eq('booking_id', bookingId);
+
+    if (segmentsError) {
+      throw new BadRequestException(`Lỗi lấy segments: ${segmentsError.message}`);
+    }
+
+    // Với mỗi segment, giảm available_seats
+    for (const segment of segments || []) {
+      const passengerCount = segment.passengers?.length || 0;
+      
+      if (passengerCount > 0) {
+        // Tìm inventory record tương ứng
+        const { data: inventory, error: invError } = await this.supabaseService.client
+          .from('inventories')
+          .select('id, available_seats')
+          .eq('flight_instance_id', segment.flight_instance_id)
+          .eq('fare_bucket_id', segment.fare_bucket_id)
+          .single();
+
+        if (invError) {
+          console.warn(`Không tìm thấy inventory cho segment ${segment.flight_instance_id}, ${segment.fare_bucket_id}`);
+          continue;
+        }
+
+        // Giảm available_seats
+        const newAvailableSeats = Math.max(0, inventory.available_seats - passengerCount);
+        
+        const { error: updateError } = await this.supabaseService.client
+          .from('inventories')
+          .update({ 
+            available_seats: newAvailableSeats,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', inventory.id);
+
+        if (updateError) {
+          throw new BadRequestException(`Lỗi cập nhật inventory: ${updateError.message}`);
+        }
+      }
+    }
   }
 
       /**

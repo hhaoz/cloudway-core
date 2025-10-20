@@ -24,7 +24,7 @@ export class AirportController {
   }
   @Get(':id')
   @Roles(Role.AIRLINE)
-  findOne(id:string) {
+  findOne(@Param('id') id: string) {
     return this.airportService.findOne(id);
   }
   @Post()
@@ -38,8 +38,8 @@ export class AirportController {
     return this.airportService.update(id, updateAirportDto);
   }
   @Delete(':id')
-  @Roles(Role.AIRLINE)
-  remove(id:string) {
+  @Roles(Role.ADMIN)
+  remove(@Param('id') id: string) {
     return this.airportService.remove(id);
   }
 

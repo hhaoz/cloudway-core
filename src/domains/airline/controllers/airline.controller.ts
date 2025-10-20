@@ -34,13 +34,9 @@ export class AirlineController {
   }
 
   @Delete(':id')
-  @Roles(Role.AIRLINE)
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.airlineService.remove(id);
   }
-
-
-
-
 
 }

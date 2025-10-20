@@ -7,6 +7,7 @@ import {
   } from 'typeorm';
   
   export type UserRole = 'CUSTOMER' | 'AIRLINE' | 'ADMIN';
+  export type AccountStatus = 'ACTIVE' | 'LOCKED';
   
   @Entity('users')
   export class User {
@@ -30,6 +31,9 @@ import {
   
     @Column('text', { default: 'CUSTOMER' })
     role: UserRole;
+
+    @Column('text', { default: 'ACTIVE' })
+    accountStatus: AccountStatus;
   
     @CreateDateColumn({
       type: 'timestamp with time zone',

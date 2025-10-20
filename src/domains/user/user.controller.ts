@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Multer } from 'multer';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -44,9 +46,18 @@ export class UserController {
   @Patch(':id/profile')
   updateProfile(
     @Param('id') id: string,
-    @Body() body: { full_name?: string; phone?: string; avatar_url?: string },
+    @Body() body: { full_name?: string; phone?: string; email?: string },
   ) {
     return this.userService.updateProfile(id, body);
+  }
+
+  @Post(':id/avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Multer.File,
+  ) {
+    return this.userService.updateAvatar(id, file);
   }
 
   @Patch(':id/role')
@@ -62,5 +73,35 @@ export class UserController {
   @Roles(Role.ADMIN)
   getUserByRole(@Param('role') role: 'CUSTOMER' | 'AIRLINE' | 'ADMIN') {
     return this.userService.getUserByRole(role);
+  }
+
+  @Post('migrate-avatars')
+  @Roles(Role.ADMIN)
+  migrateAvatars() {
+    return this.userService.migrateAllAvatarsToBucket();
+  }
+
+  @Post('admin/airline')
+  @Roles(Role.ADMIN)
+  createAirlineUser(
+    @Body()
+    body: {
+      email: string;
+      full_name: string;
+      phone?: string;
+      password: string;
+      airline_id: string;
+    },
+  ) {
+    return this.userService.createAirlineUser(body);
+  }
+
+  @Patch(':id/account-status')
+  @Roles(Role.ADMIN)
+  updateAccountStatus(
+    @Param('id') id: string,
+    @Body() body: { account_status: 'ACTIVE' | 'LOCKED' },
+  ) {
+    return this.userService.updateAccountStatus(id, body.account_status);
   }
 }

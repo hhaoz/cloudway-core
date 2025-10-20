@@ -4,6 +4,7 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UserService } from '../user/user.service';
 import { SupabaseService } from '../../services/supabase/supabase.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { AccountLockedException } from '../../common/exceptions/account-locked.exception';
 
 // Default avatar URL cho user mới
 const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/7.x/avataaars/svg?seed=';
@@ -22,6 +23,22 @@ export class AuthService {
 
     const supaUser = data.user;
     const metadata = supaUser.user_metadata || {};
+
+    // Kiểm tra trạng thái tài khoản trước khi cho phép đăng nhập
+    const { data: userRecord, error: userError } = await this.supabaseService.client
+      .from('users')
+      .select('id, account_status')
+      .eq('id', supaUser.id)
+      .single();
+
+    if (userError) {
+      throw new UnauthorizedException('Không tìm thấy thông tin người dùng');
+    }
+
+    // Kiểm tra trạng thái tài khoản
+    if (userRecord.account_status === 'LOCKED') {
+      throw new AccountLockedException();
+    }
 
     // Tạo full_name từ first_name và last_name nếu có
     const fullName = metadata.first_name && metadata.last_name
