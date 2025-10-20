@@ -8,13 +8,14 @@ export class SupabaseService {
 
   constructor(private configService: ConfigService) {
     const url = this.configService.get<string>('SUPABASE_URL');
-    const key = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const key = this.configService.get<string>('SUPABASE_ANON_KEY'); // Sử dụng ANON_KEY thay vì SERVICE_ROLE_KEY
     
     if (!url || !key) {
-      throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables');
+      console.error('Missing Supabase credentials:', { url: !!url, key: !!key });
+      throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
     }
     
     this.client = createClient(url, key);
-    console.log('Supabase client initialized successfully');
+    console.log('✅ Supabase client initialized successfully');
   }
 }

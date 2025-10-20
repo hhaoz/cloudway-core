@@ -34,6 +34,7 @@ import { AirlineStatisticModule } from './domains/airline-statistic/airline-stat
       envFilePath: '.env',
       load: [configuration],
     }),
+    // TypeORM disabled - using Supabase instead
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule.forRoot({isGlobal: true,})],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
