@@ -20,7 +20,7 @@
 // }
 
 
-import { IsArray, IsNotEmpty, IsUUID, IsString, IsNumber } from 'class-validator';
+import { IsArray, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class CreateFlightInstanceDto {
   @IsUUID()
@@ -45,5 +45,6 @@ export class CreateFlightInstanceDto {
   fares: {
     fare_bucket_id: string;
     base_price: number;
+    total_seats: number; // Số ghế cho hạng ghế này (phải > 0)
   }[];
 }

@@ -11,5 +11,6 @@ export declare class CreateFlightInstanceDto {
     fares: {
         fare_bucket_id: string;
         base_price: number;
+        total_seats: number;
     }[];
 }

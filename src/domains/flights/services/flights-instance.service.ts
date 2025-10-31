@@ -45,6 +45,15 @@ export class FlightsInstanceService {
             iata_code,
             logo
           )
+        ),
+        inventories:inventories (
+          available_seats,
+          total_seats,
+          fare_bucket_id
+        ),
+        aircraft:aircraft_id (
+          id,
+          seat_capacity
         )
       `)
       .neq('status', FlightStatus.CANCELLED) // Lọc ra các chuyến bay đã bị hủy
@@ -52,7 +61,33 @@ export class FlightsInstanceService {
     if (error) {
       throw new Error(error.message);
     }
-    return data;
+    
+    // Tính tổng available_seats và total_seats cho mỗi chuyến bay
+    const dataWithSeats = (data || []).map(flight => {
+      const inventories = flight.inventories || [];
+      const totalAvailableSeats = inventories.reduce((sum: number, inv: any) => sum + (inv.available_seats || 0), 0);
+      const totalSeats = inventories.reduce((sum: number, inv: any) => sum + (inv.total_seats || 0), 0);
+      
+      // Nếu không có inventories, lấy từ aircraft seat_capacity
+      let actualAvailableSeats = totalAvailableSeats;
+      let actualTotalSeats = totalSeats;
+      
+      if (inventories.length === 0) {
+        const aircraft = flight.aircraft as any;
+        if (aircraft?.seat_capacity) {
+          actualTotalSeats = aircraft.seat_capacity;
+          actualAvailableSeats = aircraft.seat_capacity; // Nếu chưa có inventory, coi như tất cả ghế còn trống
+        }
+      }
+      
+      return {
+        ...flight,
+        available_seats: actualAvailableSeats,
+        total_seats: actualTotalSeats
+      };
+    });
+    
+    return dataWithSeats;
   }
 
   async findOne(id: string) {
@@ -377,7 +412,7 @@ export class FlightsInstanceService {
 
     const flightInstanceId = newInstance.id;
 
-    // 4️⃣ Lấy seat_capacity từ aircraft
+    // 4️⃣ Lấy seat_capacity từ aircraft để validate
     const { data: aircraft } = await this.supabaseService.client
       .from('aircrafts')
       .select('seat_capacity')
@@ -388,7 +423,24 @@ export class FlightsInstanceService {
       throw new BadRequestException('Không tìm thấy thông tin máy bay');
     }
 
-    const totalSeats = aircraft.seat_capacity;
+    const aircraftCapacity = aircraft.seat_capacity;
+
+    // Validate: Tổng số ghế của tất cả các fare buckets không được vượt quá sức chứa của máy bay
+    const totalSeatsFromInput = fares.reduce((sum, fare) => sum + (fare.total_seats || 0), 0);
+    if (totalSeatsFromInput > aircraftCapacity) {
+      throw new BadRequestException(
+        `Tổng số ghế (${totalSeatsFromInput}) vượt quá sức chứa của máy bay (${aircraftCapacity})`
+      );
+    }
+
+    // Validate: Mỗi fare phải có total_seats hợp lệ
+    for (const fare of fares) {
+      if (!fare.total_seats || fare.total_seats <= 0) {
+        throw new BadRequestException(
+          `Số ghế cho fare_bucket_id ${fare.fare_bucket_id} phải lớn hơn 0`
+        );
+      }
+    }
 
     // 5️⃣ Tạo fares & inventories tương ứng
     const fareRows = fares.map((f) => ({
@@ -400,8 +452,8 @@ export class FlightsInstanceService {
     const inventoryRows = fares.map((f) => ({
       flight_instance_id: flightInstanceId,
       fare_bucket_id: f.fare_bucket_id,
-      available_seats: totalSeats, // Sử dụng seat_capacity của aircraft
-      total_seats: totalSeats      // Sử dụng seat_capacity của aircraft
+      available_seats: f.total_seats, // Sử dụng số ghế từ input
+      total_seats: f.total_seats      // Sử dụng số ghế từ input
     }));
 
     const { error: fareError } = await this.supabaseService.client.from('fares').insert(fareRows);

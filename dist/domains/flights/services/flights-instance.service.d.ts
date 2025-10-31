@@ -13,6 +13,8 @@ export declare class FlightsInstanceService {
     constructor(supabaseService: SupabaseService, airlineStatisticService: AirlineStatisticService);
     create(createFlightInstanceDto: CreateFlightInstanceDto): Promise<any[]>;
     findAll(): Promise<{
+        available_seats: any;
+        total_seats: any;
         id: any;
         status: any;
         scheduled_departure_local: any;
@@ -33,6 +35,15 @@ export declare class FlightsInstanceService {
                 iata_code: any;
                 logo: any;
             }[];
+        }[];
+        inventories: {
+            available_seats: any;
+            total_seats: any;
+            fare_bucket_id: any;
+        }[];
+        aircraft: {
+            id: any;
+            seat_capacity: any;
         }[];
     }[]>;
     findOne(id: string): Promise<any>;

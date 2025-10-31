@@ -49,6 +49,15 @@ let FlightsInstanceService = class FlightsInstanceService {
             iata_code,
             logo
           )
+        ),
+        inventories:inventories (
+          available_seats,
+          total_seats,
+          fare_bucket_id
+        ),
+        aircraft:aircraft_id (
+          id,
+          seat_capacity
         )
       `)
             .neq('status', flight_status_enum_1.FlightStatus.CANCELLED)
@@ -56,7 +65,26 @@ let FlightsInstanceService = class FlightsInstanceService {
         if (error) {
             throw new Error(error.message);
         }
-        return data;
+        const dataWithSeats = (data || []).map(flight => {
+            const inventories = flight.inventories || [];
+            const totalAvailableSeats = inventories.reduce((sum, inv) => sum + (inv.available_seats || 0), 0);
+            const totalSeats = inventories.reduce((sum, inv) => sum + (inv.total_seats || 0), 0);
+            let actualAvailableSeats = totalAvailableSeats;
+            let actualTotalSeats = totalSeats;
+            if (inventories.length === 0) {
+                const aircraft = flight.aircraft;
+                if (aircraft?.seat_capacity) {
+                    actualTotalSeats = aircraft.seat_capacity;
+                    actualAvailableSeats = aircraft.seat_capacity;
+                }
+            }
+            return {
+                ...flight,
+                available_seats: actualAvailableSeats,
+                total_seats: actualTotalSeats
+            };
+        });
+        return dataWithSeats;
     }
     async findOne(id) {
         const { data, error } = await this.supabaseService.client
@@ -322,7 +350,16 @@ let FlightsInstanceService = class FlightsInstanceService {
         if (!aircraft) {
             throw new common_1.BadRequestException('Không tìm thấy thông tin máy bay');
         }
-        const totalSeats = aircraft.seat_capacity;
+        const aircraftCapacity = aircraft.seat_capacity;
+        const totalSeatsFromInput = fares.reduce((sum, fare) => sum + (fare.total_seats || 0), 0);
+        if (totalSeatsFromInput > aircraftCapacity) {
+            throw new common_1.BadRequestException(`Tổng số ghế (${totalSeatsFromInput}) vượt quá sức chứa của máy bay (${aircraftCapacity})`);
+        }
+        for (const fare of fares) {
+            if (!fare.total_seats || fare.total_seats <= 0) {
+                throw new common_1.BadRequestException(`Số ghế cho fare_bucket_id ${fare.fare_bucket_id} phải lớn hơn 0`);
+            }
+        }
         const fareRows = fares.map((f) => ({
             flight_instance_id: flightInstanceId,
             fare_bucket_id: f.fare_bucket_id,
@@ -331,8 +368,8 @@ let FlightsInstanceService = class FlightsInstanceService {
         const inventoryRows = fares.map((f) => ({
             flight_instance_id: flightInstanceId,
             fare_bucket_id: f.fare_bucket_id,
-            available_seats: totalSeats,
-            total_seats: totalSeats
+            available_seats: f.total_seats,
+            total_seats: f.total_seats
         }));
         const { error: fareError } = await this.supabaseService.client.from('fares').insert(fareRows);
         if (fareError)
