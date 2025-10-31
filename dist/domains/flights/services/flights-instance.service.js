@@ -135,6 +135,11 @@ let FlightsInstanceService = class FlightsInstanceService {
           id,
           type,
           seat_capacity
+        ),
+        inventories:inventories (
+          available_seats,
+          total_seats,
+          fare_bucket_id
         )
       `)
             .eq('flight_number.airline_id', airlineId)
@@ -142,7 +147,26 @@ let FlightsInstanceService = class FlightsInstanceService {
         if (error) {
             throw new Error(error.message);
         }
-        return data;
+        const dataWithSeats = (data || []).map(flight => {
+            const inventories = flight.inventories || [];
+            const totalAvailableSeats = inventories.reduce((sum, inv) => sum + (inv.available_seats || 0), 0);
+            const totalSeats = inventories.reduce((sum, inv) => sum + (inv.total_seats || 0), 0);
+            let actualAvailableSeats = totalAvailableSeats;
+            let actualTotalSeats = totalSeats;
+            if (inventories.length === 0) {
+                const aircraft = flight.aircraft;
+                if (aircraft?.seat_capacity) {
+                    actualTotalSeats = aircraft.seat_capacity;
+                    actualAvailableSeats = aircraft.seat_capacity;
+                }
+            }
+            return {
+                ...flight,
+                available_seats: actualAvailableSeats,
+                total_seats: actualTotalSeats
+            };
+        });
+        return dataWithSeats;
     }
     async update(id, updateFlightDto) {
         const { data, error } = await this.supabaseService.client

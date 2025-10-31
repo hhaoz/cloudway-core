@@ -143,6 +143,11 @@ export class FlightsInstanceService {
           id,
           type,
           seat_capacity
+        ),
+        inventories:inventories (
+          available_seats,
+          total_seats,
+          fare_bucket_id
         )
       `)
       .eq('flight_number.airline_id', airlineId)
@@ -151,7 +156,33 @@ export class FlightsInstanceService {
     if (error) {
       throw new Error(error.message);
     }
-    return data;
+    
+    // Tính tổng available_seats và total_seats cho mỗi chuyến bay
+    const dataWithSeats = (data || []).map(flight => {
+      const inventories = flight.inventories || [];
+      const totalAvailableSeats = inventories.reduce((sum: number, inv: any) => sum + (inv.available_seats || 0), 0);
+      const totalSeats = inventories.reduce((sum: number, inv: any) => sum + (inv.total_seats || 0), 0);
+      
+      // Nếu không có inventories, lấy từ aircraft seat_capacity
+      let actualAvailableSeats = totalAvailableSeats;
+      let actualTotalSeats = totalSeats;
+      
+      if (inventories.length === 0) {
+        const aircraft = flight.aircraft as any;
+        if (aircraft?.seat_capacity) {
+          actualTotalSeats = aircraft.seat_capacity;
+          actualAvailableSeats = aircraft.seat_capacity; // Nếu chưa có inventory, coi như tất cả ghế còn trống
+        }
+      }
+      
+      return {
+        ...flight,
+        available_seats: actualAvailableSeats,
+        total_seats: actualTotalSeats
+      };
+    });
+    
+    return dataWithSeats;
   }
 
   async update(id: string, updateFlightDto: UpdateFlightInstanceDto) {

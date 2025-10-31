@@ -65,6 +65,8 @@ export declare class FlightsInstanceController {
     }[]>;
     findOne(id: string): Promise<any>;
     findByAirline(airlineId: string): Promise<{
+        available_seats: any;
+        total_seats: any;
         id: any;
         scheduled_departure_local: any;
         scheduled_arrival_local: any;
@@ -99,6 +101,11 @@ export declare class FlightsInstanceController {
             id: any;
             type: any;
             seat_capacity: any;
+        }[];
+        inventories: {
+            available_seats: any;
+            total_seats: any;
+            fare_bucket_id: any;
         }[];
     }[]>;
     filterByStatus(filterDto: FilterFlightsByStatusDto): Promise<{

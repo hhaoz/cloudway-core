@@ -48,6 +48,8 @@ export declare class FlightsInstanceService {
     }[]>;
     findOne(id: string): Promise<any>;
     findByAirline(airlineId: string): Promise<{
+        available_seats: any;
+        total_seats: any;
         id: any;
         scheduled_departure_local: any;
         scheduled_arrival_local: any;
@@ -82,6 +84,11 @@ export declare class FlightsInstanceService {
             id: any;
             type: any;
             seat_capacity: any;
+        }[];
+        inventories: {
+            available_seats: any;
+            total_seats: any;
+            fare_bucket_id: any;
         }[];
     }[]>;
     update(id: string, updateFlightDto: UpdateFlightInstanceDto): Promise<any>;
